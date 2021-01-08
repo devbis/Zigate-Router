@@ -39,10 +39,10 @@ TARGET = Router
 
 # Default target device is the JN5169
 
-JENNIC_CHIP ?= JN5179
-JENNIC_CHIP_FAMILY ?=JN517x
-JENNIC_PCB             ?= DEVKIT5
- 
+JENNIC_CHIP ?= JN5169
+JENNIC_CHIP_FAMILY ?=JN516x
+JENNIC_PCB             ?= DEVKIT2
+
 STACK_SIZE = 5000
 MINIMUM_HEAP_SIZE = 2000
 
@@ -58,6 +58,10 @@ JENNIC_SDK              = JN-SW-4170
 ZNCLKCMD                = AppBuildZBPro.ld
 JENNIC_PCB              = DEVKIT4
 ENDIAN 	                = BIG_ENDIAN
+endif
+
+ifneq ($(OS),Windows_NT)
+	DISABLE_LTO ?= 1
 endif
 
 ###############################################################################
@@ -85,7 +89,7 @@ CFLAGS  += -DBUTTON_MAP_$(DR)
 #CFLAGS  += -D$(DR)
 
 # NFC NTAG ICODE (new) functionality
-APP_NTAG_ICODE ?= 1
+APP_NTAG_ICODE ?= 0
 ifeq ($(APP_NTAG_ICODE), 1)
 CFLAGS  += -DAPP_NTAG_ICODE
 endif
@@ -185,8 +189,8 @@ endif
 # Path definitions
 
 # Use if application directory contains multiple targets
-SDK_BASE_DIR        = $(abspath ../../../../sdk/$(JENNIC_SDK))
 APP_BASE            = $(abspath ../..)
+SDK_BASE_DIR        = $(abspath $(APP_BASE)/../sdk/$(JENNIC_SDK))
 APP_BLD_DIR         = $(APP_BASE)/$(TARGET)/Build
 APP_SRC_DIR         = $(APP_BASE)/$(TARGET)/Source
 APP_COMMON_SRC_DIR  = $(APP_BASE)/Common/Source
@@ -210,6 +214,7 @@ APPSRC += pdum_gen.c
 APPSRC += pdum_apdu.S
 APPSRC += zps_gen.c
 APPSRC += app_start.c
+APPSRC += missing.c
 APPSRC += app_router_node.c
 APPSRC += app_zcl_task.c
 APPSRC += app_buttons.c
@@ -344,7 +349,7 @@ vpath % $(APP_SRC_DIR):$(APP_COMMON_SRC_DIR):$(ZCL_SRC_DIRS):$(ZCL_SRC):$(BDB_SR
 all: $(APP_BLD_DIR)/$(TARGET)$(TARGET_FEATURES)$(TARGET_HARDWARE).bin
 
 ifeq ($(JENNIC_CHIP_FAMILY),JN517x)
-$(APP_SRC_DIR)/pdum_gen.c $(APP_SRC_DIR)/pdum_gen.h: $(APP_COMMON_SRC_DIR)/$(APP_ZPSCFG) $(PDUMCONFIG)
+$(APP_SRC_DIR)/pdum_gen.c $(APP_SRC_DIR)/pdum_gen.h $(APP_SRC_DIR)/pdum_apdu.S: $(APP_SRC_DIR)/$(APP_ZPSCFG) $(PDUMCONFIG)
 	$(info Configuring the PDUM ...)
 	$(PDUMCONFIG) -z $(TARGET) -e $(ENDIAN) -f $< -o $(APP_SRC_DIR)
 	@echo
